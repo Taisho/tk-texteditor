@@ -17,7 +17,7 @@ namespace eval Tcl {
 
     ## in this method we will
     ## duplicate some logic with
-    ## parse_dbl_quotes, but that is
+    ## parse_dbl_quotes, but it's
     ## necessery. 
     #
     ## This method already recieves a copy of the
