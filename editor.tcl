@@ -14,6 +14,7 @@ global lastTabIndex -1
 
 proc openCalendar {} {
     toplevel .calendar
+    #TODO check if the calendar window was already open and if yes, focus it
     wm title .calendar "Calendar"
 
     set systemTime [clock seconds]
