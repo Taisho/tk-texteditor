@@ -46,7 +46,6 @@ namespace eval Tcl {
                 ## Opening double quote encountered
                 ##
                     set text [string range "$text" $i end]
-                    puts "set tags parse_dbl_quotes \"$text\""
                     set tags [parse_dbl_quotes text c l]
 
                     ## The last tag's end property is of our
@@ -73,9 +72,7 @@ namespace eval Tcl {
                     ## track of indexes from the beginning of
                     ## the text that was parsed.
 
-                    #puts "adjust_tags_indexes tags $c $l"
                     #adjust_tags_indexes tags $c $l
-                    #puts "(outside: adjust_tags_indexes) $tags"
 
                     concat_dicts Tags tags
                 }
@@ -109,7 +106,6 @@ namespace eval Tcl {
             #dict set Tags 
             dict for {key tag} $Tags {
 
-                #puts "key: $key, tag: $tag"
 
                 #if {$key == 0} {
                 #    continue
@@ -120,12 +116,10 @@ namespace eval Tcl {
                 regexp {^([^.]+).([^.]+)} "[dict get $tag start]" -> lineIndex charIndex
                 set lineIndex [expr $lineIndex + $lineOffset]
                 dict set Tags $key start "$lineIndex.$charIndex"
-                puts "dict set Tags $key start \"$lineIndex.$charIndex\""
 
                 regexp {^([^.]+).([^.]+)} "[dict get $tag end]" -> lineIndex charIndex
                 set lineIndex [expr $lineIndex + $lineOffset]
                 dict set Tags $key end "$lineIndex.$charIndex"
-                puts "dict set Tags $key end \"$lineIndex.$charIndex\""
             }
 
             set firstLine [dict get $Tags 0]
@@ -134,18 +128,15 @@ namespace eval Tcl {
             regexp {^([^.]+).([^.]+)} "[dict get $firstLine start]" -> lineIndex charIndex
             set charIndex [expr $charIndex + $charOffset]
             set startLineNum $lineIndex
-            puts "dict set Tags 0 start \"$lineIndex.$charIndex\""
             dict set Tags 0 start "$lineIndex.$charIndex"
 
             ## end
             regexp {^([^.]+).([^.]+)} "[dict get $firstLine end]" -> lineIndex charIndex 
             if { $lineIndex == $startLineNum } {
                 set charIndex [expr $charIndex + $charOffset]
-                puts "dict set Tags 0 end \"$lineIndex.$charIndex\""
                 dict set Tags 0 end "$lineIndex.$charIndex"
             }
 
-            puts "(inside: adjust_tags_indexes) $Tags"
         }
     }
 
@@ -176,6 +167,20 @@ namespace eval Tcl {
         for {set i 0} {$i < $length} {incr i} {
             if {[string compare [dict get $Dict [lindex $reversedKeys $i] tag] $Tag] == 0} {
                 dict set Dict [lindex $reversedKeys $i] $prop $value
+            }
+        }
+    }
+
+    proc getLastTag {dict Tag prop} {
+        upvar $dict Dict
+
+        set reversedKeys [lreverse [dict keys $Dict]]
+        set length [llength reversedKeys]
+        #set returnTag 
+
+        for {set i 0} {$i < $length} {incr i} {
+            if {[string compare [dict get $Dict [lindex $reversedKeys $i] tag] $Tag] == 0} {
+                return dict get Dict [lindex $reversedKeys $i] $prop
             }
         }
     }
@@ -229,10 +234,13 @@ namespace eval Tcl {
             ## character. Reflect that
             ## in the program
             if {[regexp "\n" [string index $text $i]] == 1} {
-                #puts "new line"
                 incr l;
                 set c 0;
             }
+        }
+
+        if {[getLastTag Tags DoubleQuotes end] == ""} {
+            setLastTag Tags DoubleQuotes end end
         }
 
         ## here we are altering the
