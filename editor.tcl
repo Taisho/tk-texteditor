@@ -12,6 +12,66 @@ global currentTextWidget -1
 global lastTabIndex -1
 
 
+proc openCalendar {} {
+    toplevel .calendar
+    #TODO check if the calendar window was already open and if yes, focus it
+    wm title .calendar "Calendar"
+
+    set systemTime [clock seconds]
+    set month [clock format $systemTime -format "%b"]
+    set monthNum [clock format $systemTime -format "%N"]
+    set year [clock format $systemTime -format "%Y"]
+    set nextYear [expr "$year+1"]
+
+    # Get epoch seconds of the first day of the month (at 00:00)
+    set beginMonth [clock scan "$year-$month-01" -format "%Y-%b-%d"] 
+    set weekDay [clock format $beginMonth -format "%a"]
+
+    set firstMonday ""
+    set offset 0
+
+    switch $weekDay {
+        Mon { set offset 0 }
+        Tue { set offset -1 }
+        Wed { set offset -2 }
+        Thu { set offset -3 }
+        Fri { set offset -4 }
+        Sat { set offset -5 }
+        Sun { set offset -6 }
+    }
+
+    set beginCalendar [expr $beginMonth+60*60*24*$offset]
+
+    for {set i 0; set x 0; set y 0; set continue 1; set curday $beginCalendar} {
+        $continue == 1} {} {
+        set weekDay [clock format $curday -format "%a"]
+        set day [clock format $curday -format "%d"]
+        set curMonNum [clock format $curday -format "%N"]
+        set curYear [clock format $curday -format "%Y"]
+
+        puts "$curMonNum > $monthNum && [string compare $weekDay Mon] == 0"
+        if {(($curYear == $year && $curMonNum > $monthNum) || \
+            ($curYear > $year && $curMonNum != $monthNum)) && \
+            [string compare $weekDay Mon] == 0} {
+            set continue 0
+            continue
+        }
+
+        grid [button .calendar.btn$i -text "$day - $weekDay"] -column $x -row $y
+
+        if {$x >= 6} {
+            incr y
+            set x 0
+        } else {
+            incr x
+        }
+
+        incr i
+        set curday [expr $curday+60*60*24]
+    }
+}
+
+
 proc openFile {} {
     global lastTabIndex
     global tabs
@@ -27,11 +87,12 @@ proc openFile {} {
     # Now check if the file was already opened and loaded in memory
    set existingTab {}
    foreach {key value} [array get tabs] {
-       puts "key: $key"
+        puts "key: $key"
         puts "regexp: [regexp {(.+),(.+)} $key -> tabIndex prop]"
-       puts "tabIndex and prop: '$tabIndex' '$prop'"
+        puts "tabIndex and prop: '$tabIndex' '$prop'"
+        puts "filePath: $tabs($key)"
 
-        if {[string compare $prop filePath] == 0 && [string compare $filePath tabs($key)] == 0} {
+        if {[string compare $prop filePath] == 0 && [string compare $filePath $tabs($key)] == 0} {
            set existingTab $tabIndex 
            puts "set existing tab $tabIndex"
         }
@@ -181,6 +242,7 @@ $m.file add separator
 
 $m.file add command -accelerator "Ctrl+q" -label "Quit" -command "quit"
 bind . <Control-q> { exit }
+$m.journal add command -label "Calendar" -command "openCalendar"
 
 
 
