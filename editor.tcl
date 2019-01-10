@@ -15,10 +15,26 @@ namespace eval Calendar {
     proc contextMenu {x y} {
         tk_popup .calendar.contextMenu $x $y
     }
+
+    proc openPreferences {} {
+        set w .calendarPreferences
+        if {[winfo exists $w]} {
+            focus $w
+            return
+        }
+        toplevel $w
+        wm title $w "Calendar Preferences"
+
+        pack [canvas $w.canvas -width 300 -height 120] -anchor nw
+    }
 }
 
 
 proc openCalendar {} {
+    if {[winfo exists .calendar]} {
+        focus .calendar
+        return
+    }
     toplevel .calendar
     #TODO check if the calendar window was already open and if yes, focus it
     wm title .calendar "Calendar"
@@ -26,6 +42,14 @@ proc openCalendar {} {
 
     menu .calendar.contextMenu -tearoff 0
     .calendar.contextMenu add command -accelerator "Ctrl+C" -label "Copy" -command { copySelection }
+
+    set m [menu .calendar.menu -relief flat]
+    .calendar configure -menu $m
+    menu $m.file
+    $m add cascade -menu $m.file -label File
+
+    $m.file add command -accelerator "Ctrl+p" -label "Preferences Ctrl-P" -command "Calendar::openPreferences"	
+    bind .calendar <Control-p> { Calendar::openPreferences }
 
     set systemTime [clock seconds]
     set month [clock format $systemTime -format "%b"]
@@ -67,8 +91,11 @@ proc openCalendar {} {
             continue
         }
 
-        grid [text .calendar.widg$i -width 15 -height 6] -column $x -row $y
-        .calendar.widg$i insert end "$day - $weekDay"
+        grid [canvas .calendar.widg$i -width 75 -height 75] -column $x -row $y
+        .calendar.widg$i create text 10 30 -anchor w -font Purisa -text "${day}th"
+        .calendar.widg$i create rect 0 75 75 75 -outline #000 -fill #000
+        .calendar.widg$i create rect 77 0 75 75 -outline #000 -fill #000
+        #.calendar.widg$i insert end "$day - $weekDay"
 
         bind .calendar.widg$i <3> "Calendar::contextMenu %X %Y"
 
@@ -85,17 +112,23 @@ proc openCalendar {} {
 }
 
 
-proc openFile {} {
+proc openFile {{file ""}} {
     global lastTabIndex
     global tabs
     global currentTab
     global currentTextWidget
 
+    
     # If no file was selected, don't do anything
-    set filePath [tk_getOpenFile]
-    if { $filePath == "" } {
-        return
+    if {$file == ""} {
+        set filePath [tk_getOpenFile]
+        if { $filePath == "" } {
+            return
+        }
+    } else {
+        set filePath $file
     }
+
 
     # Now check if the file was already opened and loaded in memory
    set existingTab {}
@@ -205,6 +238,7 @@ proc quit {} {
 }
 
 wm title . "Fox"
+wm geometry . 640x480
 pack [ttk::frame .toolbar] -fill x
 image create photo iconNewFile -file "icons/page.png"
 pack [button .toolbar.new -relief flat -overrelief raised -command { newFile } -image iconNewFile -text New -compound top] -anchor nw -side left
@@ -237,9 +271,11 @@ set m .menubar
 menu $m.file
 menu $m.edit
 menu $m.journal
+menu $m.computer
 $m add cascade -menu $m.file -label File
 $m add cascade -menu $m.edit -label Edit
 $m add cascade -menu $m.journal -label Journal
+$m add cascade -menu $m.computer -label Computer
 
 # // Doing menus
 #
@@ -258,7 +294,44 @@ bind . <Control-q> { exit }
 
 
 
+#Edit Menu
+$m.edit add command -accelerator "Ctrl+c" -label "Copy" -command "copy"	
+bind . <Control-c> { copy }
+
+$m.edit add command -accelerator "Ctrl+v" -label "Paste" -command "paste"	
+bind . <Control-v> { paste }
+
+$m.edit add separator
+
+$m.edit add command -accelerator "Ctrl+p" -label "Preferences" -command "openPreferences"	
+bind . <Control-p> { openPreferences }
+
+
+
+
 # Journal Menu
 $m.journal add command -accelerator "Ctrl+g" -label "Calendar..." -command "openCalendar"	
 #pack [button .btn -text "Parse" -command { Tcl::parse_text $currentTextWidget "Tcl"}]
+
+
+
+
+# Computer Menu
+$m.computer add command -label "File Manager" -command "FileManager::open"	
+$m.computer add command -label "Diagnosis" -command "Diagnosis::open"	
+#pack [button .btn -text "Parse" -command { Tcl::parse_text $currentTextWidget "Tcl"}]
+
+
+
+# End of menu initialization
+
+
+if {$argc > 0} {
+    for {set i 0} {$i < $argc} {incr i} {
+        set arg [lindex $argv $i]
+        if {[file exists $arg]} {
+            openFile $arg
+        }
+    }
+}
 

@@ -11,6 +11,7 @@ namespace eval Tcl {
              set end [dict get $object end]
 
             $widget tag add $tag $start $end
+            puts "$widget tag add $tag $start $end"
         }
         # return SyntaxRules
     }
@@ -27,12 +28,32 @@ namespace eval Tcl {
         upvar $t text
         set Tags [dict create]
         # possible values are plain,
-        # DblQuote and Variable
+        # DblQuote, Hashbang and Variable
         set Now plain
 
-        for {set i 0; set c 0; set l 1; set tnum 0} { $i < [string length "$text"]} { incr i } {
+        for {set i 0; set c 0; set l 1; set tnum 0} { $i < [string length "$text"]} { incr i; incr c} {
 
+            puts "i: $i"
             set char [string index "$text" $i]
+
+            # RULE if the first characters in the file are '#!', then this is a hash bang
+            if {$c == 0 && $l == 1 && $char == "#"} {
+                set nextChar [string index "$text" [expr $i+1]]
+                if {$nextChar == "!"} {
+                    set Now Hashbang
+                }
+            }
+            if {$Now == "Hashbang"} {
+                set text [string range "$text" $i end]
+                set i 0
+                set tags [parse_hashbang text c l i]
+                #set c [expr $c-1]
+                #set i [expr $i-1]
+                concat_dicts Tags tags
+                set Now plain
+
+                continue
+            }
 
             if {[string compare [string index "$text" $i] "\n"] == 0} {
                 incr l
@@ -41,13 +62,15 @@ namespace eval Tcl {
 
             if {[string compare $Now "plain"] == 0} {
 
-                if { [string compare [string index $text $i] "\""] == 0 } {
+                if {[string compare [string index $text $i] "\""] == 0 } {
                 ##
                 ## Opening double quote encountered
                 ##
                     set text [string range "$text" $i end]
-                    set tags [parse_dbl_quotes text c l]
-
+                    set il 0
+                    set tags [parse_dbl_quotes text c l il]
+                    set c [expr $c-1]
+                    set i [expr $i-1]
                     ## The last tag's end property is of our
                     ## interest as we will use it to adjust
                     ## $charIndex ($c) for current line
@@ -77,7 +100,6 @@ namespace eval Tcl {
                     concat_dicts Tags tags
                 }
             }
-            incr c
          }
 
          return $Tags
@@ -189,10 +211,45 @@ namespace eval Tcl {
     ## least is] enclosed in double quotes. The opening double
     ## quote must be present
     
-    proc parse_dbl_quotes { t ci li} {
+    proc parse_hashbang { t ci li ii} {
         upvar $t text
         upvar $ci chrIndex
         upvar $li lnIndex
+        upvar $ii iIndex
+
+        set Tags [dict create]
+        # possible values are plain
+        # and variable
+        set Now Hashbang
+        for {set i $iIndex; set c $chrIndex; set l $lnIndex; set vnum 0} \
+            {$i < [string length "$text"]} \
+            { incr i; set chrIndex $c; set lnIndex $l; set iIndex $i} {
+                set char [string index $text $i]
+                puts "i: $i (parse_hashbang); char: \"$char\""
+                if {$char == "\n"} {
+                    puts "dict set Tags"
+                    dict set Tags $vnum [dict create start "1.0" end "$l.$c" tag Hashbang]
+                    incr vnum
+                    incr l
+                    break
+                }
+                incr c
+
+        }
+
+        set text [string range "$text" $i end]
+        return $Tags
+    }
+
+    ## this procedure expects a text [whose begining at
+    ## least is] enclosed in double quotes. The opening double
+    ## quote must be present
+    
+    proc parse_dbl_quotes { t ci li ii} {
+        upvar $t text
+        upvar $ci chrIndex
+        upvar $li lnIndex
+        upvar $ii iIndex
 
         set Tags [dict create]
         # possible values are plain
@@ -200,7 +257,9 @@ namespace eval Tcl {
         set Now Plain
 
         # TODO scan for setting variables with "set " and apply tags for variable' encounters
-        for {set i 0; set c $chrIndex; set l $lnIndex; set vnum 0} { $i < [string length "$text"]} { incr i; set chrIndex $c; set lnIndex $l} {
+        for {set i $iIndex; set c $chrIndex; set l $lnIndex; set vnum 0} \
+            {$i < [string length "$text"]} \
+            { incr i; set chrIndex $c; set lnIndex $l; set iIndex $i} {
 
             if { [string compare [string index "$text" $i] {\$}] == 0 } {
                 dict set Tags $vnum [dict create start "$l.$c" tag Variable]
@@ -267,5 +326,6 @@ namespace eval Tcl {
         $textwidget tag configure variable -foreground red
         $textwidget tag configure word_proc -foreground red
         $textwidget tag configure DoubleQuotes -foreground red
+        $textwidget tag configure Hashbang -foreground green
     }
 }
