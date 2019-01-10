@@ -11,11 +11,21 @@ global currentTab -1
 global currentTextWidget -1
 global lastTabIndex -1
 
+namespace eval Calendar {
+    proc contextMenu {x y} {
+        tk_popup .calendar.contextMenu $x $y
+    }
+}
+
 
 proc openCalendar {} {
     toplevel .calendar
     #TODO check if the calendar window was already open and if yes, focus it
     wm title .calendar "Calendar"
+    wm resizable .calendar 0 0
+
+    menu .calendar.contextMenu -tearoff 0
+    .calendar.contextMenu add command -accelerator "Ctrl+C" -label "Copy" -command { copySelection }
 
     set systemTime [clock seconds]
     set month [clock format $systemTime -format "%b"]
@@ -57,7 +67,10 @@ proc openCalendar {} {
             continue
         }
 
-        grid [button .calendar.btn$i -text "$day - $weekDay"] -column $x -row $y
+        grid [text .calendar.widg$i -width 15 -height 6] -column $x -row $y
+        .calendar.widg$i insert end "$day - $weekDay"
+
+        bind .calendar.widg$i <3> "Calendar::contextMenu %X %Y"
 
         if {$x >= 6} {
             incr y
@@ -242,9 +255,6 @@ $m.file add separator
 
 $m.file add command -accelerator "Ctrl+q" -label "Quit" -command "quit"
 bind . <Control-q> { exit }
-$m.journal add command -label "Calendar" -command "openCalendar"
-
-
 
 
 
