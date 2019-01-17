@@ -4,7 +4,7 @@
 package require Tcl 8.5
 package require snit 2.3.2
 
-source lib/TclParser.tcl
+source lib/Recognizer.tcl
 
 global tabs
 global currentTab -1
@@ -168,8 +168,7 @@ proc openFile {{file ""}} {
 
     $textWidget delete 1.0 end
     $textWidget insert end $contents
-    Tcl::apply_syntax_tk $textWidget "Tcl";
-    Tcl::parse_text $textWidget "Tcl"
+    Core::recognize_parse $filePath $textWidget
 
     set tabs($lastTabIndex,widgetPath) $textWidget
     set tabs($lastTabIndex,filePath) $filePath
@@ -198,8 +197,7 @@ proc newFile {} {
     set contents ""
     $textWidget delete 1.0 end
     $textWidget insert end $contents
-    Tcl::apply_syntax_tk $textWidget "Tcl";
-    Tcl::parse_text $textWidget "Tcl"
+    Core::recognize_parse $filePath $textWidget
 
     set tabs($lastTabIndex,widgetPath) $textWidget
     set tabs($lastTabIndex,filePath) $filePath

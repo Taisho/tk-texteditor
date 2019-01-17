@@ -1,25 +1,31 @@
 namespace eval Tcl {
 
-    proc parse_text { widget lang } {
+    proc parse_text { widget } {
         set text [$widget get 0.1 end];
         set SyntaxRules [dict create]
         set SyntaxRules [parse text]
+        #set SyntaxRules "0 {start 3.0 end 3.2 tag Hashbang}"
 
         dict for {index object} $SyntaxRules {
              set start [dict get $object start]
              set tag [dict get $object tag]
-             set end [dict get $object end]
 
-            $widget tag add $tag $start $end
+             set end ""
+             if {[dict exists $object end]} {
+                 set end [dict get $object end]
+             }
+
+            if {$end == ""} {
+                set end end
+            }
             puts "$widget tag add $tag $start $end"
+            $widget tag add $tag $start $end
         }
         # return SyntaxRules
     }
 
-    ## in this method we will
-    ## duplicate some logic with
-    ## parse_dbl_quotes, but it's
-    ## necessery. 
+    ## in this method we will duplicate some logic with
+    ## parse_dbl_quotes, but it's necessery. 
     #
     ## This method already recieves a copy of the
     ## text being parsed, so we can throw away
@@ -33,7 +39,6 @@ namespace eval Tcl {
 
         for {set i 0; set c 0; set l 1; set tnum 0} { $i < [string length "$text"]} { incr i; incr c} {
 
-            puts "i: $i"
             set char [string index "$text" $i]
 
             # RULE if the first characters in the file are '#!', then this is a hash bang
@@ -47,9 +52,11 @@ namespace eval Tcl {
                 set text [string range "$text" $i end]
                 set i 0
                 set tags [parse_hashbang text c l i]
+
                 #set c [expr $c-1]
                 #set i [expr $i-1]
                 concat_dicts Tags tags
+                puts "hashbang: $Tags"
                 set Now plain
 
                 continue
@@ -67,8 +74,8 @@ namespace eval Tcl {
                 ## Opening double quote encountered
                 ##
                     set text [string range "$text" $i end]
-                    set il 0
-                    set tags [parse_dbl_quotes text c l il]
+                    set i 0
+                    set tags [parse_dbl_quotes text c l i]
                     set c [expr $c-1]
                     set i [expr $i-1]
                     ## The last tag's end property is of our
@@ -109,12 +116,14 @@ namespace eval Tcl {
         upvar $D1 dict1;
         upvar $D2 dict2;
         set keys [dict keys $dict1]
-        set index [llength keys]
+        set index [dict size $dict1]
         set d2Length [llength [dict keys $dict2]]
 
+         puts "@ index: $index"
         for {set i $index; set y 0} {$y < $d2Length} {incr i; incr y} {
+            puts "dict set dict1 $i [dict get $dict2 $y]"
             dict set dict1 $i [dict get $dict2 $y]
-    }
+        }
     }
 
     proc adjust_tags_indexes { T charOffset lineOffset} {
@@ -225,9 +234,7 @@ namespace eval Tcl {
             {$i < [string length "$text"]} \
             { incr i; set chrIndex $c; set lnIndex $l; set iIndex $i} {
                 set char [string index $text $i]
-                puts "i: $i (parse_hashbang); char: \"$char\""
                 if {$char == "\n"} {
-                    puts "dict set Tags"
                     dict set Tags $vnum [dict create start "1.0" end "$l.$c" tag Hashbang]
                     incr vnum
                     incr l
@@ -298,6 +305,7 @@ namespace eval Tcl {
             }
         }
 
+        puts "tags2: $Tags"
         if {[getLastTag Tags DoubleQuotes end] == ""} {
             setLastTag Tags DoubleQuotes end end
         }
@@ -315,17 +323,22 @@ namespace eval Tcl {
         return $Tags
     }
 
-    proc apply_syntax_tk { textwidget lang } {
+    proc apply_syntax { textwidget } {
+
+        puts [font names]
+        font create bold -weight bold
+        font create regular 
         # //
         # // NOTE when passing accross Tk widget to
         # // a procedures, don't upvar it, as Tk
         # // widget identifiers are not variables
         # // (rather procedures)
         # //
+        $textwidget configure -font regular
         $textwidget tag configure comment -foreground #ececec
         $textwidget tag configure variable -foreground red
         $textwidget tag configure word_proc -foreground red
         $textwidget tag configure DoubleQuotes -foreground red
-        $textwidget tag configure Hashbang -foreground green
+        $textwidget tag configure Hashbang -background #99D535 -foreground white -font bold
     }
 }
