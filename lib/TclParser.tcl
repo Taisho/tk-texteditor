@@ -232,19 +232,26 @@ namespace eval Tcl {
         set Now Hashbang
         for {set i $iIndex; set c $chrIndex; set l $lnIndex; set vnum 0} \
             {$i < [string length "$text"]} \
-            { incr i; set chrIndex $c; set lnIndex $l; set iIndex $i} {
+            { incr i;} {
                 set char [string index $text $i]
                 if {$char == "\n"} {
                     dict set Tags $vnum [dict create start "1.0" end "$l.$c" tag Hashbang]
                     incr vnum
                     incr l
+                    set c 0
                     break
+                } else {
+                    incr c
                 }
-                incr c
 
         }
 
+        set lnIndex $l
+        set chrIndex $c
+        set iIndex 0
+
         set text [string range "$text" $i end]
+        puts "@@-text-after-hashban: $text"
         return $Tags
     }
 
@@ -327,7 +334,7 @@ namespace eval Tcl {
 
         puts [font names]
         font create bold -weight bold
-        font create regular 
+        font create regular -family Courier
         # //
         # // NOTE when passing accross Tk widget to
         # // a procedures, don't upvar it, as Tk
