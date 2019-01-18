@@ -75,8 +75,8 @@ namespace eval Tcl {
                 ##
                     set text [string range "$text" $i end]
                     set i 0
-                    set tags [parse_dbl_quotes text c l i]
                     set c [expr $c-1]
+                    set tags [parse_dbl_quotes text c l i]
                     set i [expr $i-1]
                     ## The last tag's end property is of our
                     ## interest as we will use it to adjust
@@ -275,6 +275,8 @@ namespace eval Tcl {
             {$i < [string length "$text"]} \
             { incr i; set chrIndex $c; set lnIndex $l; set iIndex $i} {
 
+            set char [string index "$text" $i]
+            puts "dbl_quotes: c:$c, i:$i, char: $char"
             if { [string compare [string index "$text" $i] {\$}] == 0 } {
                 dict set Tags $vnum [dict create start "$l.$c" tag Variable]
                 set Now Variable
