@@ -69,6 +69,18 @@ namespace eval Tcl {
 
             if {[string compare $Now "plain"] == 0} {
 
+                if {[regexp {^proc\s} $text]} {
+                    puts "{^proc}"
+                    set oldL $l
+                    set oldC $c
+                    set len [string length proc]
+                    set i [expr $i+$len]
+                    set c [expr $c+$len]
+
+                    set tags [dict create 0 [dict create start "$l.$c" end "$oldL.$oldC" Keyword]]
+                    concat_dicts Tags tags
+                }
+
                 if {[string compare [string index $text $i] "\""] == 0 } {
                 ##
                 ## Opening double quote encountered
@@ -347,5 +359,6 @@ namespace eval Tcl {
         $textwidget tag configure word_proc -foreground red
         $textwidget tag configure DoubleQuotes -foreground red
         $textwidget tag configure Hashbang -background #99D535 -foreground white -font bold
+        $textwidget tag configure Keyword -foreground #FFF796 -font bold
     }
 }
