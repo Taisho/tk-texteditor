@@ -14,8 +14,8 @@ namespace eval Core {
         set firstline [$textwidget get 0.1 end];
 
         set exten ""
-        regexp {\..*$} $filename -> exten
-
+        regexp {\.(.*$)} $filename -> exten
+        puts "extention: $filename ($exten)"
         if {$exten != ""} {
             set exten [string tolower $exten]
             switch $exten {
