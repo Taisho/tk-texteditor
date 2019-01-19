@@ -9,7 +9,7 @@ source lib/Recognizer.tcl
 global tabs
 global currentTab -1
 global currentTextWidget -1
-global lastTabIndex -1
+global lastTabIndex 0
 
 namespace eval Calendar {
     proc contextMenu {x y} {
@@ -83,7 +83,6 @@ proc openCalendar {} {
         set curMonNum [clock format $curday -format "%N"]
         set curYear [clock format $curday -format "%Y"]
 
-        puts "$curMonNum > $monthNum && [string compare $weekDay Mon] == 0"
         if {(($curYear == $year && $curMonNum > $monthNum) || \
             ($curYear > $year && $curMonNum != $monthNum)) && \
             [string compare $weekDay Mon] == 0} {
@@ -111,6 +110,12 @@ proc openCalendar {} {
     }
 }
 
+proc saveFile {} {
+    set filePath 
+    set channel [open $filePath w]
+    puts -nonewline $channel $contents
+    close $channel
+}
 
 proc openFile {{file ""}} {
     global lastTabIndex
@@ -133,14 +138,9 @@ proc openFile {{file ""}} {
     # Now check if the file was already opened and loaded in memory
    set existingTab {}
    foreach {key value} [array get tabs] {
-        puts "key: $key"
-        puts "regexp: [regexp {(.+),(.+)} $key -> tabIndex prop]"
-        puts "tabIndex and prop: '$tabIndex' '$prop'"
-        puts "filePath: $tabs($key)"
 
-        if {[string compare $prop filePath] == 0 && [string compare $filePath $tabs($key)] == 0} {
+        if {[string compare $value filePath] == 0 && [string compare $filePath $tabs($key)] == 0} {
            set existingTab $tabIndex 
-           puts "set existing tab $tabIndex"
         }
     } 
 
@@ -164,7 +164,6 @@ proc openFile {{file ""}} {
     bind $textWidget <3> { contextMenu %X %Y}
 
     .notebook select $textWidget
-    puts "tabId: $tabId"
 
     $textWidget delete 1.0 end
     $textWidget insert end $contents
@@ -192,7 +191,6 @@ proc newFile {} {
 
     bind $textWidget <3> { contextMenu %X %Y}
     .notebook select $textWidget
-    puts "tabId: $tabId"
 
     set contents ""
     $textWidget delete 1.0 end
@@ -283,6 +281,8 @@ bind . <Control-n> { newFile }
 
 $m.file add command -accelerator "Ctrl+o" -label "Open..." -command "openFile"
 bind . <Control-o> { openFile }
+$m.file add command -accelerator "Ctrl+s" -label "Save" -command "saveFile"
+bind . <Control-s> { saveFile }
 $m.file add command -accelerator "Ctrl+w" -label "Close" -command "closeFile"
 
 $m.file add separator

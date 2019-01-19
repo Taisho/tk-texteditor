@@ -15,7 +15,6 @@ namespace eval Core {
 
         set exten ""
         regexp {\.(.*$)} $filename -> exten
-        puts "extention: $filename ($exten)"
         if {$exten != ""} {
             set exten [string tolower $exten]
             switch $exten {

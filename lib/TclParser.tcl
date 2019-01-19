@@ -18,7 +18,6 @@ namespace eval Tcl {
             if {$end == ""} {
                 set end end
             }
-            puts "$widget tag add $tag $start $end"
             $widget tag add $tag $start $end
         }
         # return SyntaxRules
@@ -56,7 +55,6 @@ namespace eval Tcl {
                 #set c [expr $c-1]
                 #set i [expr $i-1]
                 concat_dicts Tags tags
-                puts "hashbang: $Tags"
                 set Now plain
 
                 continue
@@ -67,10 +65,10 @@ namespace eval Tcl {
                 set c 0
             }
 
+            puts "[string range $text $i end]\n--------"
             if {[string compare $Now "plain"] == 0} {
 
-                if {[regexp {^proc\s} $text]} {
-                    puts "{^proc}"
+                if {[regexp {^proc\b} [string range $text $i end]]} {
                     set oldL $l
                     set oldC $c
                     set len [string length proc]
@@ -131,9 +129,7 @@ namespace eval Tcl {
         set index [dict size $dict1]
         set d2Length [llength [dict keys $dict2]]
 
-         puts "@ index: $index"
         for {set i $index; set y 0} {$y < $d2Length} {incr i; incr y} {
-            puts "dict set dict1 $i [dict get $dict2 $y]"
             dict set dict1 $i [dict get $dict2 $y]
         }
     }
@@ -263,7 +259,6 @@ namespace eval Tcl {
         set iIndex 0
 
         set text [string range "$text" $i end]
-        puts "@@-text-after-hashban: $text"
         return $Tags
     }
 
@@ -282,13 +277,14 @@ namespace eval Tcl {
         # and variable
         set Now Plain
 
+        puts "Begin double quote"
         # TODO scan for setting variables with "set " and apply tags for variable' encounters
         for {set i $iIndex; set c $chrIndex; set l $lnIndex; set vnum 0} \
             {$i < [string length "$text"]} \
             { incr i; set chrIndex $c; set lnIndex $l; set iIndex $i} {
 
+            puts "[string range $text $i end]\n--------"
             set char [string index "$text" $i]
-            puts "dbl_quotes: c:$c, i:$i, char: $char"
             if { [string compare [string index "$text" $i] {\$}] == 0 } {
                 dict set Tags $vnum [dict create start "$l.$c" tag Variable]
                 set Now Variable
@@ -305,7 +301,7 @@ namespace eval Tcl {
                 if {[regexp "\"" [string index "$text" $i]] == 1} {
                     set Now Plain
                     setLastTag Tags DoubleQuotes end "$l.[expr $c+1]"
-
+                    break
                 }
 
                 ## *If the character we are at is non-alphanumeric consider variable name to have been collected
@@ -326,7 +322,6 @@ namespace eval Tcl {
             }
         }
 
-        puts "tags2: $Tags"
         if {[getLastTag Tags DoubleQuotes end] == ""} {
             setLastTag Tags DoubleQuotes end end
         }
@@ -341,12 +336,12 @@ namespace eval Tcl {
         ## the iterated dictionary.
         set text [string range "$text" $i end]
 
+        puts "End double quote"
         return $Tags
     }
 
     proc apply_syntax { textwidget } {
 
-        puts [font names]
         font create bold -weight bold
         font create regular -family Courier
         # //
@@ -361,6 +356,6 @@ namespace eval Tcl {
         $textwidget tag configure word_proc -foreground red
         $textwidget tag configure DoubleQuotes -foreground red
         $textwidget tag configure Hashbang -background #99D535 -foreground white -font bold
-        $textwidget tag configure Keyword -foreground #FFF796 -font bold
+        $textwidget tag configure Keyword -foreground #FB2710 -font bold
     }
 }
