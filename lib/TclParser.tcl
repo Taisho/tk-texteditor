@@ -36,7 +36,7 @@ namespace eval Tcl {
         # DblQuote, Hashbang and Variable
         set Now plain
 
-        for {set i 0; set c 0; set l 1; set tnum 0} { $i < [string length "$text"]} { incr i; incr c} {
+        for {set i 0; set c 0; set l 1; set tnum 0} { $i < [string length "$text"]} { } {
 
             set char [string index "$text" $i]
 
@@ -63,9 +63,10 @@ namespace eval Tcl {
             if {[string compare [string index "$text" $i] "\n"] == 0} {
                 incr l
                 set c 0
+                incr i
+                continue 
             }
 
-            puts "[string range $text $i end]\n--------"
             if {[string compare $Now "plain"] == 0} {
 
                 if {[regexp {^proc\b} [string range $text $i end]]} {
@@ -85,9 +86,9 @@ namespace eval Tcl {
                 ##
                     set text [string range "$text" $i end]
                     set i 0
-                    set c [expr $c-1]
+                    #set c [expr $c0]
                     set tags [parse_dbl_quotes text c l i]
-                    set i [expr $i-1]
+                    #set i [expr $i-1]
                     ## The last tag's end property is of our
                     ## interest as we will use it to adjust
                     ## $charIndex ($c) for current line
@@ -117,6 +118,9 @@ namespace eval Tcl {
                     concat_dicts Tags tags
                 }
             }
+
+            incr i
+            incr c
          }
 
          return $Tags
@@ -235,9 +239,10 @@ namespace eval Tcl {
         upvar $ii iIndex
 
         set Tags [dict create]
-        # possible values are plain
-        # and variable
+
+        # @var Now possible values are plain and Hashbang
         set Now Hashbang
+
         for {set i $iIndex; set c $chrIndex; set l $lnIndex; set vnum 0} \
             {$i < [string length "$text"]} \
             { incr i;} {
@@ -247,6 +252,7 @@ namespace eval Tcl {
                     incr vnum
                     incr l
                     set c 0
+                    incr i
                     break
                 } else {
                     incr c
@@ -277,13 +283,11 @@ namespace eval Tcl {
         # and variable
         set Now Plain
 
-        puts "Begin double quote"
         # TODO scan for setting variables with "set " and apply tags for variable' encounters
         for {set i $iIndex; set c $chrIndex; set l $lnIndex; set vnum 0} \
             {$i < [string length "$text"]} \
             { incr i; set chrIndex $c; set lnIndex $l; set iIndex $i} {
 
-            puts "[string range $text $i end]\n--------"
             set char [string index "$text" $i]
             if { [string compare [string index "$text" $i] {\$}] == 0 } {
                 dict set Tags $vnum [dict create start "$l.$c" tag Variable]
@@ -301,6 +305,7 @@ namespace eval Tcl {
                 if {[regexp "\"" [string index "$text" $i]] == 1} {
                     set Now Plain
                     setLastTag Tags DoubleQuotes end "$l.[expr $c+1]"
+                    set chrIndex $c; set lnIndex $l; set iIndex $i
                     break
                 }
 
@@ -335,15 +340,14 @@ namespace eval Tcl {
         ## as it's making a copy of
         ## the iterated dictionary.
         set text [string range "$text" $i end]
+        set iIndex 0
+        set i 0
 
-        puts "End double quote"
         return $Tags
     }
 
     proc apply_syntax { textwidget } {
 
-        font create bold -weight bold
-        font create regular -family Courier
         # //
         # // NOTE when passing accross Tk widget to
         # // a procedures, don't upvar it, as Tk

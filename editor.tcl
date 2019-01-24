@@ -11,6 +11,10 @@ global currentTab -1
 global currentTextWidget -1
 global lastTabIndex 0
 
+# Initialize fonts
+font create bold -weight bold
+font create regular -family Courier
+
 namespace eval Calendar {
     proc contextMenu {x y} {
         tk_popup .calendar.contextMenu $x $y
@@ -113,7 +117,6 @@ proc openCalendar {} {
 proc saveFile {} {
     set filePath 
     set channel [open $filePath w]
-    puts -nonewline $channel $contents
     close $channel
 }
 
@@ -123,6 +126,9 @@ proc openFile {{file ""}} {
     global currentTab
     global currentTextWidget
 
+    if {![info exist lastTabIndex]} {
+        set lastTabIndex 0
+    } 
     
     # If no file was selected, don't do anything
     if {$file == ""} {
@@ -139,8 +145,11 @@ proc openFile {{file ""}} {
    set existingTab {}
    foreach {key value} [array get tabs] {
 
-        if {[string compare $value filePath] == 0 && [string compare $filePath $tabs($key)] == 0} {
-           set existingTab $tabIndex 
+       set ord 0
+       set prop ""
+       regexp {^(\d+),([^,]+)} $key -> ord prop
+        if {[string compare $prop filePath] == 0 && [string compare $filePath $tabs($key)] == 0} {
+           set existingTab $ord
         }
     } 
 
@@ -156,9 +165,9 @@ proc openFile {{file ""}} {
     close $channel
 
     regexp {([^/]+)$} $filePath -> basename 
-    incr lastTabIndex
-    set textWidget [text .notebook.tw$lastTabIndex]
-    .notebook add $textWidget -text $basename
+
+    set textWidget [text ".notebook.tw${lastTabIndex}"]
+    puts ".notebook: [.notebook add $textWidget -text $basename]"
     set tabId [.notebook index .notebook.tw$lastTabIndex]
 
     bind $textWidget <3> { contextMenu %X %Y}
@@ -172,6 +181,7 @@ proc openFile {{file ""}} {
     set tabs($lastTabIndex,widgetPath) $textWidget
     set tabs($lastTabIndex,filePath) $filePath
     set currentTextWidget $textWidget
+    incr lastTabIndex
 }
 
 proc newFile {} {
@@ -215,6 +225,8 @@ proc contextMenu {x y} {
 }
 
 proc tabChanged {} {
+    #TODO set currentTextWidget in this event handler.
+    # Until this is done, close buffers will not work properly
 }
 
 proc closeFile {} {
