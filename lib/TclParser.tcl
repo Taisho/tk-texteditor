@@ -6,9 +6,9 @@ namespace eval Tcl {
         set SyntaxRules [parse text]
         #set SyntaxRules "0 {start 3.0 end 3.2 tag Hashbang}"
 
-        puts "\n\n\n"
-        puts " (parse_text)"
-        puts $SyntaxRules
+        #puts "\n\n\n"
+        #puts " (parse_text)"
+        #puts $SyntaxRules
 
         dict for {index object} $SyntaxRules {
              set start [dict get $object start]
@@ -34,7 +34,7 @@ namespace eval Tcl {
     ## text being parsed, so we can throw away
     ## parts of it at will
     proc parse { t } {
-        puts "- (parse)"
+        #puts "- (parse)"
         upvar $t text
         set Tags [dict create]
         # possible values are plain,
@@ -44,7 +44,7 @@ namespace eval Tcl {
         for {set i 0; set c 0; set l 1; set tnum 0} { $i < [string length "$text"]} { } {
 
             set char [string index "$text" $i]
-            puts "- \$char: $char; \$i: $i"
+            #puts "- \$char: $char; \$i: $i"
             # RULE if the first characters in the file are '#!', then this is a hash bang
             if {$c == 0 && $l == 1 && $char == "#"} {
                 set nextChar [string index "$text" [expr $i+1]]
@@ -70,7 +70,7 @@ namespace eval Tcl {
                  if {[regexp {\W} [string index "$text" $i]] == 1} {
                     set Now Plain
                     dict set Tags $tnum end "$l.$c"
-                    puts "--- Variable END; Tags: $Tags"
+                    #puts "--- Variable END; Tags: $Tags"
                     incr tnum
                 }
             }
@@ -84,14 +84,19 @@ namespace eval Tcl {
 
             if {[string compare $Now "Plain"] == 0} {
                 if {$char == "\$"} {
-                    puts "Variable at $l.$c"
+                    #puts "Variable at $l.$c"
                     dict set Tags $tnum [dict create start "$l.$c" tag Variable]
                     set Now Variable
                     incr i
                     incr c
                     continue
                 }
-                if {[regexp {^proc\b} [string range $text $i end]]} {
+                set match ""
+                puts "- excerpt: [string range $text $i end]"
+                regexp {proc} [string range $text $i end] match
+                puts "- \$match: $match"
+                if {[regexp {proc\\>} [string range $text $i end]]} {
+                    puts "- found proc"
                     set oldL $l
                     set oldC $c
                     set len [string length proc]
@@ -140,7 +145,7 @@ namespace eval Tcl {
                     concat_dicts Tags tags
 
                     set tnum [llength [dict keys $Tags]]
-                    puts "- \$tnum: $tnum"
+                    #puts "- \$tnum: $tnum"
                 }
             }
 
@@ -148,7 +153,7 @@ namespace eval Tcl {
             incr c
          }
 
-         puts "- (end parse)"
+         #puts "- (end parse)"
          return $Tags
     }
 
@@ -227,35 +232,35 @@ namespace eval Tcl {
     # * value - The value that will be used as a new value
     #
     proc setLastTag {dict Tag prop value} {
-        puts "---- (setLastTag)"
+        #puts "---- (setLastTag)"
         upvar $dict Dict
 
         set reversedKeys [lreverse [dict keys $Dict]]
         set length [llength $reversedKeys]
         #set returnTag 
 
-        puts "---- length: $length; keys: $reversedKeys"
+        #puts "---- length: $length; keys: $reversedKeys"
         for {set i 0} {$i < $length} {incr i} {
-            puts "-----   i: $i"
-            puts "-----  el: [lindex $reversedKeys $i]"
-            puts "----- tag: [dict get $Dict [lindex $reversedKeys $i] tag]"
-            puts "----- Tag: $Tag"
-            puts "------ "
+            #puts "-----   i: $i"
+            #puts "-----  el: [lindex $reversedKeys $i]"
+            #puts "----- tag: [dict get $Dict [lindex $reversedKeys $i] tag]"
+            #puts "----- Tag: $Tag"
+            #puts "------ "
             if {[string compare [dict get $Dict [lindex $reversedKeys $i] tag] $Tag] == 0} {
                 dict set Dict [lindex $reversedKeys $i] $prop $value
-                puts "------ dict set Dict [lindex $reversedKeys $i] $prop $value"
+                #puts "------ dict set Dict [lindex $reversedKeys $i] $prop $value"
             }
             
         }
-        puts "---- ((( \$Dict )))"
-        puts "---- $Dict"
-        puts "---- ((( end \$Dict)))"
-        puts "---- (end setLastTag)"
-        puts "----"
+        #puts "---- ((( \$Dict )))"
+        #puts "---- $Dict"
+        #puts "---- ((( end \$Dict)))"
+        #puts "---- (end setLastTag)"
+        #puts "----"
     }
 
     proc getLastTag {dict Tag prop} {
-        puts "---- (getLastTag)"
+        #puts "---- (getLastTag)"
         upvar $dict Dict
 
         set reversedKeys [lreverse [dict keys $Dict]]
@@ -267,7 +272,7 @@ namespace eval Tcl {
                 return dict get Dict [lindex $reversedKeys $i] $prop
             }
         }
-        puts "---- (end getLastTag)"
+        #puts "---- (end getLastTag)"
     }
 
     ## this procedure expects a text [whose begining at
@@ -315,7 +320,7 @@ namespace eval Tcl {
     ## quote must be present
     
     proc parse_dbl_quotes { t ci li ii} {
-        puts "--- (parse_dbl_quotes)"
+        #puts "--- (parse_dbl_quotes)"
         upvar $t text
         upvar $ci chrIndex
         upvar $li lnIndex
@@ -326,16 +331,16 @@ namespace eval Tcl {
         # and variable
         set Now Plain
 
-        puts "--- "
+        #puts "--- "
         # TODO scan for setting variables with "set " and apply tags for variable' encounters
         for {set i $iIndex; set c $chrIndex; set l $lnIndex; set vnum 0} \
             {$i < [string length "$text"]} \
             { incr i; set chrIndex $c; set lnIndex $l; set iIndex $i} {
 
             set char [string index "$text" $i]
-            puts "--- char: $char; i: $i; Now: $Now"
+            #puts "--- char: $char; i: $i; Now: $Now"
             if { [string compare [string index "$text" $i] "\$"] == 0 } {
-                puts "Variable in double quotes at $l.$c"
+                #puts "Variable in double quotes at $l.$c"
                 dict set Tags $vnum [dict create start "$l.$c" tag Variable]
                 set Now Variable
             }
@@ -348,20 +353,20 @@ namespace eval Tcl {
             } else {
                 ## *If the character we are at is a double quote we must terminate
                 if {$Now == "Variable"} {
-                    puts "--- Scanning Variable: $char, $i"
+                    #puts "--- Scanning Variable: $char, $i"
                 }
 
                 if {$char == "\""} {
                     if {$Now == "Variable"} {
-                        puts "--- \$vnum: $vnum"
+                        #puts "--- \$vnum: $vnum"
                         dict set Tags $vnum end "$l.$c"
-                        puts "--- Variable in double quotes END PREMATURELY"
+                        #puts "--- Variable in double quotes END PREMATURELY"
                         incr vnum
                     }
                     set Now Plain
-                    puts "--- double quotes END"
+                    #puts "--- double quotes END"
                     setLastTag Tags DoubleQuotes end "$l.[expr $c+1]"
-                    puts "--- ((( \$Tags: ))) $Tags"
+                    #puts "--- ((( \$Tags: ))) $Tags"
                     set chrIndex $c; set lnIndex $l; set iIndex $i
                     break
                 }
@@ -375,9 +380,9 @@ namespace eval Tcl {
                     } elseif {[regexp {\W} [string index "$text" $i]] == 1} {
                         set Now DoubleQuotes
                         dict set Tags $vnum end "$l.$c"
-                        puts "--- Variable in double quotes END; Tags: $Tags"
+                        #puts "--- Variable in double quotes END; Tags: $Tags"
                         incr vnum
-                        #puts "Variable in double quotes END"
+                        ##puts "Variable in double quotes END"
                     }
                 }
             }
@@ -408,7 +413,7 @@ namespace eval Tcl {
         set iIndex 0
         set i 0
 
-        puts "--- (end parse_dbl_quotes)"
+        #puts "--- (end parse_dbl_quotes)"
         return $Tags
     }
 
