@@ -39,7 +39,7 @@ namespace eval Tcl {
         set Tags [dict create]
         # possible values are plain,
         # DblQuote, Hashbang and Variable
-        set Now plain
+        set Now Plain
 
         for {set i 0; set c 0; set l 1; set tnum 0} { $i < [string length "$text"]} { } {
 
@@ -60,9 +60,19 @@ namespace eval Tcl {
                 #set c [expr $c-1]
                 #set i [expr $i-1]
                 concat_dicts Tags tags
-                set Now plain
+                set tnum [llength [dict keys $Tags]]
+                set Now Plain
 
                 continue
+            }
+
+            if {$Now == "Variable"} {
+                 if {[regexp {\W} [string index "$text" $i]] == 1} {
+                    set Now Plain
+                    dict set Tags $tnum end "$l.$c"
+                    puts "--- Variable END; Tags: $Tags"
+                    incr tnum
+                }
             }
 
             if {[string compare [string index "$text" $i] "\n"] == 0} {
@@ -72,8 +82,15 @@ namespace eval Tcl {
                 continue 
             }
 
-            if {[string compare $Now "plain"] == 0} {
-
+            if {[string compare $Now "Plain"] == 0} {
+                if {$char == "\$"} {
+                    puts "Variable at $l.$c"
+                    dict set Tags $tnum [dict create start "$l.$c" tag Variable]
+                    set Now Variable
+                    incr i
+                    incr c
+                    continue
+                }
                 if {[regexp {^proc\b} [string range $text $i end]]} {
                     set oldL $l
                     set oldC $c
@@ -85,7 +102,7 @@ namespace eval Tcl {
                     concat_dicts Tags tags
                 }
 
-                if {[string compare [string index $text $i] "\""] == 0 } {
+                if {$char == "\""} {
                 ##
                 ## Opening double quote encountered
                 ##
@@ -121,6 +138,9 @@ namespace eval Tcl {
                     #adjust_tags_indexes tags $c $l
 
                     concat_dicts Tags tags
+
+                    set tnum [llength [dict keys $Tags]]
+                    puts "- \$tnum: $tnum"
                 }
             }
 
