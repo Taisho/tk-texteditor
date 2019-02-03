@@ -3,8 +3,12 @@
 
 package require Tcl 8.5
 package require snit 2.3.2
+package require tktray 
+package require json 
+package require json::write 
 
 source lib/Recognizer.tcl
+source lib/TimeTracker.tcl
 
 global tabs
 global currentTab -1
@@ -33,14 +37,67 @@ namespace eval Calendar {
     }
 }
 
+proc openQuestionnaires {} {
+    global lastTabIndex
+    global tabs
+    global currentTab
+    global currentTextWidget
+
+    if {![info exist lastTabIndex]} {
+        set lastTabIndex 0
+    } 
+
+   set tabName "::questionnaires"
+    # Now check if the file was already opened and loaded in memory
+   set existingTab {}
+   foreach {key value} [array get tabs] {
+
+       set ord 0
+       set prop ""
+       regexp {^(\d+),([^,]+)} $key -> ord prop
+        if {[string compare $prop tabName] == 0 && [string compare $tabName $tabs($key)] == 0} {
+           set existingTab $ord
+        }
+    } 
+
+    wm title . "$tabName - Fox"
+
+    if { $existingTab != {} } {
+        .notebook select $existingTab
+        return
+    }
+
+    set tabTitle {[Schedules]}
+
+    set textWidget [text ".notebook.tw${lastTabIndex}"]
+    puts ".notebook: [.notebook add $textWidget -text $tabTitle]"
+    set tabId [.notebook index .notebook.tw$lastTabIndex]
+
+    bind $textWidget <3> { contextMenu %X %Y}
+
+    .notebook select $textWidget
+
+    $textWidget delete 1.0 end
+    if {![namespace exists Questionnaire]} {
+        source lib/Questionnaires.tcl
+    }
+    Questionnaires::list_questionnaires $textWidget
+
+    set tabs($lastTabIndex,widgetPath) $textWidget
+    set tabs($lastTabIndex,tabName) $tabName
+    set currentTextWidget $textWidget
+    incr lastTabIndex
+}
 
 proc openCalendar {} {
+
+    #check if the calendar window was already open and if yes, focus it
     if {[winfo exists .calendar]} {
         focus .calendar
         return
     }
+
     toplevel .calendar
-    #TODO check if the calendar window was already open and if yes, focus it
     wm title .calendar "Calendar"
     wm resizable .calendar 0 0
 
@@ -245,7 +302,7 @@ proc quit {} {
     exit
 }
 
-wm title . "Fox"
+wm title . "Kreut"
 wm geometry . 640x480
 pack [ttk::frame .toolbar] -fill x
 image create photo iconNewFile -file "icons/page.png"
@@ -259,6 +316,10 @@ pack [button .toolbar.saveas -relief flat -overrelief raised -command { saveFile
 pack [ttk::notebook .notebook] -expand yes -fill both
 pack [ttk::frame .statusbar] -fill x
 pack [label .statusbar.label -text "Some info"] -anchor nw
+
+# Place Tray Icon
+image create photo trayIcon -file "icons/application_edit.png"
+tktray::icon .tray -class KreutTrayIcon -image trayIcon -visible yes
 
 bind .notebook <<NotebookTabChanged>> { tabChanged }
 bind .notebook <Double-1> { newFile }
@@ -321,7 +382,8 @@ bind . <Control-p> { openPreferences }
 
 # Journal Menu
 $m.journal add command -accelerator "Ctrl+g" -label "Calendar..." -command "openCalendar"	
-#pack [button .btn -text "Parse" -command { Tcl::parse_text $currentTextWidget "Tcl"}]
+$m.journal add command -accelerator "Ctrl+t" -label "Questionnaire..." -command "openQuestionnaires"	
+$m.journal add command -label "Time Tracker..." -command "TimeTracker::open"	
 
 
 
