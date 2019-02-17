@@ -37,6 +37,58 @@ namespace eval Calendar {
     }
 }
 
+proc openLanguages {} {
+    global lastTabIndex
+    global tabs
+    global currentTab
+    global currentTextWidget
+
+    if {![info exist lastTabIndex]} {
+        set lastTabIndex 0
+    } 
+
+   set tabName "::languages"
+    # Now check if the file was already opened and loaded in memory
+   set existingTab {}
+   foreach {key value} [array get tabs] {
+
+       set ord 0
+       set prop ""
+       regexp {^(\d+),([^,]+)} $key -> ord prop
+        if {[string compare $prop tabName] == 0 && [string compare $tabName $tabs($key)] == 0} {
+           set existingTab $ord
+        }
+    } 
+
+    wm title . "$tabName - Fox"
+
+    if { $existingTab != {} } {
+        .notebook select $existingTab
+        return
+    }
+
+    set tabTitle {[Languages]}
+
+    set textWidget [text ".notebook.tw${lastTabIndex}"]
+    puts ".notebook: [.notebook add $textWidget -text $tabTitle]"
+    set tabId [.notebook index .notebook.tw$lastTabIndex]
+
+    bind $textWidget <3> { contextMenu %X %Y}
+
+    .notebook select $textWidget
+
+    $textWidget delete 1.0 end
+    if {![namespace exists Questionnaire]} {
+        source lib/Languages.tcl
+    }
+    Languages::home $textWidget
+
+    set tabs($lastTabIndex,widgetPath) $textWidget
+    set tabs($lastTabIndex,tabName) $tabName
+    set currentTextWidget $textWidget
+    incr lastTabIndex
+}
+
 proc openQuestionnaires {} {
     global lastTabIndex
     global tabs
@@ -381,8 +433,9 @@ bind . <Control-p> { openPreferences }
 
 
 # Journal Menu
-$m.journal add command -accelerator "Ctrl+g" -label "Calendar..." -command "openCalendar"	
-$m.journal add command -accelerator "Ctrl+t" -label "Questionnaire..." -command "openQuestionnaires"	
+$m.journal add command -accelerator "Ctrl+g" -label "Calendar" -command "openCalendar"	
+$m.journal add command -accelerator "Ctrl+t" -label "Questionnaire" -command "openQuestionnaires"	
+$m.journal add command -accelerator "Ctrl+f" -label "Foreign Languages" -command "openLanguages"
 $m.journal add command -label "Time Tracker..." -command "TimeTracker::open"	
 
 
