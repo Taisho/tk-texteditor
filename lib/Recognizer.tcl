@@ -1,5 +1,4 @@
 source lib/TclParser.tcl
-source lib/TclParser.tcl
 
 namespace eval Core {
 

@@ -1,6 +1,6 @@
-source Reader.tcl
-source Rule.tcl
-source Pattern.tcl
+source lib/Reader.tcl
+source lib/Rule.tcl
+source lib/Pattern.tcl
 
 # Include guard
 if {[info exists ::sourced_Tcl]} {

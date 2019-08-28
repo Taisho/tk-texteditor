@@ -11,8 +11,8 @@ if {[info exists ::sourced_Reader]} {
 set ::sourced_Reader yes
 
 snit::type Reader {
-    property ruleStack
-    property rules
+    variable ruleStack
+    variable rules
 
     # @param Text
     # @return An array of tokens or tags
@@ -20,9 +20,9 @@ snit::type Reader {
 
     }
 
-    snit::macro property {name initValue} {
-        variable $name $initValue
-        method get$name {} "return $name"
-        method set$name {value} "set $name \$value"
-    }
+#    snit::macro property {name initValue} {
+#        variable $name $initValue
+#        method get$name {} "return $name"
+#        method set$name {value} "set $name \$value"
+#    }
 }

@@ -1,9 +1,9 @@
-#!/usr/bin/wish
+#!/usr/bin/env wish
 
 
 package require Tcl 8.5
 package require snit 2.3.2
-package require tktray 
+#package require tktray 
 package require json 
 package require json::write 
 
@@ -371,7 +371,7 @@ pack [label .statusbar.label -text "Some info"] -anchor nw
 
 # Place Tray Icon
 image create photo trayIcon -file "icons/application_edit.png"
-tktray::icon .tray -class KreutTrayIcon -image trayIcon -visible yes
+#tktray::icon .tray -class KreutTrayIcon -image trayIcon -visible yes
 
 bind .notebook <<NotebookTabChanged>> { tabChanged }
 bind .notebook <Double-1> { newFile }
